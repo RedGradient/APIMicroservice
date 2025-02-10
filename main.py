@@ -15,20 +15,20 @@ ALGORITHM: str = "RS256"
 
 async def fetch_public_keys() -> dict[str, str]:
     async with httpx.AsyncClient() as client:
-        get_public_keys_url = "http://127.0.0.1:8000/public_keys"
+        get_public_keys_url = "http://127.0.0.1:8000/public-keys"
         response = await client.post(get_public_keys_url)
         return response.json()
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
-    global PUBLIC_KEYS
-    PUBLIC_KEYS = await fetch_public_keys()
+    global public_keys
+    public_keys = await fetch_public_keys()
 
     yield
 
 app = FastAPI(lifespan=lifespan)
 
-PUBLIC_KEYS: dict[str, str]
+public_keys: dict[str, str]
 
 async def jwt_auth(token: Security(HTTPBearer)) -> None:
     try:
@@ -51,13 +51,13 @@ async def jwt_auth(token: Security(HTTPBearer)) -> None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
 
 async def get_public_key(key_id: str) -> str:
-    global PUBLIC_KEYS
+    global public_keys
 
-    if key_id not in PUBLIC_KEYS:
-        PUBLIC_KEYS = await fetch_public_keys()
-    if key_id not in PUBLIC_KEYS:
+    if key_id not in public_keys:
+        public_keys = await fetch_public_keys()
+    if key_id not in public_keys:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid key id")
-    return PUBLIC_KEYS[key_id]
+    return public_keys[key_id]
 
 
 @app.post("/protected",
