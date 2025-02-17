@@ -36,8 +36,7 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
 
 app = FastAPI(lifespan=lifespan)
 
-
-async def jwt_auth(token: Security(HTTPBearer)) -> None:
+async def jwt_auth(token: str = Security(HTTPBearer())) -> None:
     """
     Performs JWT authentication for incoming requests.
 
