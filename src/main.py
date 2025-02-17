@@ -23,8 +23,11 @@ async def fetch_public_keys() -> dict[str, str]:
         httpx.HTTPError: If the request to the authentication server fails.
     """
     async with httpx.AsyncClient() as client:
-        response = await client.post(PUBLIC_KEYS_URL)
-        return response.json()
+        try:
+            response = await client.post(PUBLIC_KEYS_URL)
+            return response.json()
+        except httpx.ConnectTimeout:
+            logger.warning("Connection timeout while trying to reach the auth service at %s", PUBLIC_KEYS_URL)
 
 
 @asynccontextmanager
