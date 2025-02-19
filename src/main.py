@@ -1,4 +1,6 @@
 import logging
+import random
+import uuid
 from contextlib import asynccontextmanager
 from typing import Any, AsyncGenerator
 
@@ -14,6 +16,45 @@ from src.config import PUBLIC_KEYS_URL, ALGORITHM
 logger = logging.getLogger("uvicorn")
 public_keys: dict[str, str]
 
+num_users = 10
+num_orders_per_user = 5
+
+fake_users: list[dict[str, Any]] = []
+fake_orders: list[dict[str, Any]] = []
+
+def generate_fake_users(num_users: int):
+    first_names = ["John", "Jane", "Alice", "Bob", "Patrick", "Sandy", "Tom", "Jerry", "Chris", "Anna"]
+    last_names = ["Smith", "Doe", "Johnson", "Brown", "Davis", "Miller", "Wilson", "Taylor", "Anderson", "Thomas"]
+
+    users = []
+    for user_id in range(num_users):  # ID начинается с 0
+        first_name = random.choice(first_names)
+        last_name = random.choice(last_names)
+        username = f"{first_name.lower()}.{last_name.lower()}{random.randint(1, 100)}"  # Генерация уникального имени пользователя
+        email = f"{username}@example.com"  # Формат email
+        users.append({
+            "id": user_id,  # Уникальный ID
+            "username": username,
+            "email": email
+        })
+    return users
+
+def generate_fake_orders(users: list[dict[str, Any]], num_orders_per_user: int):
+    products = ["Laptop", "Smartphone", "Tablet", "Headphones", "Charger"]
+    orders = []
+
+    for user in users:
+        for _ in range(random.randint(1, num_orders_per_user)):  # Каждый пользователь может иметь от 1 до num_orders_per_user заказов
+            order = {
+                "order_id": str(uuid.uuid4()),  # Генерация уникального идентификатора заказа
+                "user_id": user["id"],  # Привязка заказа к id пользователя
+                "product": random.choice(products),
+                "quantity": random.randint(1, 3),  # Случайное количество от 1 до 3
+                "price": round(random.uniform(10.0, 500.0), 2)  # Случайная цена от 10 до 500
+            }
+            orders.append(order)
+
+    return orders
 
 async def fetch_public_keys() -> dict[str, str]:
     """
@@ -33,7 +74,12 @@ async def fetch_public_keys() -> dict[str, str]:
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
     global public_keys
+    global fake_users
+    global fake_orders
+
     public_keys = await fetch_public_keys()
+    fake_users = generate_fake_users(num_users)
+    fake_orders = generate_fake_orders(fake_users, num_orders_per_user)
     yield
 
 
@@ -95,3 +141,21 @@ async def get_public_key(key_id: str) -> str:
 async def protected() -> Any:
     logger.info("Accessed protected API")
     return "OK"
+
+
+@app.get("/users/{user_id}",
+         summary="[Fake] Get user by id")
+async def users(user_id: int) -> dict[str, Any]:
+    for user in fake_users:
+        if user["id"] == user_id:
+            return user
+    raise HTTPException(status_code=404, detail=f"User with id {user_id} not found")
+
+@app.get("/orders/{user_id}",
+         summary="[Fake] Get order by user id")
+async def orders(user_id: int) -> list[dict[str, Any]]:
+    user_orders = []
+    for order in fake_orders:
+        if order["user_id"] == user_id:
+            user_orders.append(order)
+    return user_orders
