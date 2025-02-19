@@ -69,6 +69,8 @@ async def fetch_public_keys() -> dict[str, str]:
             return response.json()
         except httpx.ConnectTimeout:
             logger.warning("Connection timeout while trying to reach the auth service at %s", PUBLIC_KEYS_URL)
+        except httpx.ConnectError:
+            logger.warning("Unable to connect to the authentication service at %s. Please check if the service is running.", PUBLIC_KEYS_URL)
 
 
 @asynccontextmanager
