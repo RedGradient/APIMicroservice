@@ -6,7 +6,7 @@ import httpx
 import jwt
 from fastapi import FastAPI, HTTPException
 from fastapi.params import Depends, Security
-from fastapi.security import HTTPBearer
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from starlette import status
 
 from src.config import PUBLIC_KEYS_URL, ALGORITHM
@@ -39,7 +39,7 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
 
 app = FastAPI(lifespan=lifespan)
 
-async def jwt_auth(token: str = Security(HTTPBearer())) -> None:
+async def jwt_auth(auth_credentials: HTTPAuthorizationCredentials = Security(HTTPBearer())) -> None:
     """
     Performs JWT authentication for incoming requests.
 
@@ -48,12 +48,13 @@ async def jwt_auth(token: str = Security(HTTPBearer())) -> None:
     exception is raised.
 
     Args:
-        token: The JWT token extracted from the request headers.
+        auth_credentials: The authorization credentials containing the JWT token.
 
     Raises:
         HTTPException: If the token is expired, invalid, or does not have the correct type.
     """
     try:
+        token = auth_credentials.credentials
         unverified_header = jwt.get_unverified_header(token)
         key_id = unverified_header["kid"]
         public_key = await get_public_key(key_id)
