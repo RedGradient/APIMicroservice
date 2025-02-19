@@ -147,17 +147,17 @@ async def protected() -> Any:
 
 @app.get("/users/{user_id}",
          summary="[Fake] Get user by id")
-async def users(user_id: int) -> dict[str, Any]:
+async def users(user_id: int) -> dict[str, dict[str, Any]]:
     for user in fake_users:
         if user["id"] == user_id:
-            return user
+            return {"user": user}
     raise HTTPException(status_code=404, detail=f"User with id {user_id} not found")
 
 @app.get("/orders/{user_id}",
          summary="[Fake] Get order by user id")
-async def orders(user_id: int) -> list[dict[str, Any]]:
+async def orders(user_id: int) -> dict[str, list[dict[str, Any]]]:
     user_orders = []
     for order in fake_orders:
         if order["user_id"] == user_id:
             user_orders.append(order)
-    return user_orders
+    return {"orders": user_orders}
