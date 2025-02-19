@@ -92,5 +92,6 @@ async def get_public_key(key_id: str) -> str:
           summary="Protected api",
           description="This endpoint is protected and requires authentication a valid JWT token",
           dependencies=[Depends(jwt_auth)])
-async def index() -> Any:
+async def protected() -> Any:
     logger.info("Accessed protected API")
+    return "OK"
